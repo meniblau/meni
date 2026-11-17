@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ילד שעשועים - משחקים</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#dff3ff;--card:#fff;--ink:#1d3557;--acc:#2a7de1;--ok:#2e9e5b;color-scheme:light}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10243a;--card:#1b3652;--ink:#eaf4ff;--acc:#6db3ff;--ok:#5fd493;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#10243a;--card:#1b3652;--ink:#eaf4ff;--acc:#6db3ff;--ok:#5fd493}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Heebo","Segoe UI",Arial,sans-serif;text-align:center}
+main{max-width:760px;margin:0 auto;padding:16px}
+h1{margin:8px 0}h2{margin:12px 0}
+.top{font-size:70px;display:inline-block;cursor:pointer;user-select:none;transition:transform 1.4s cubic-bezier(.2,.8,.2,1)}
+button{font:inherit;border:0;border-radius:14px;padding:10px 18px;background:var(--acc);color:#fff;cursor:pointer;margin:4px}
+button.alt{background:var(--card);color:var(--ink);border:2px solid var(--acc)}
+.safe{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:12px 0}
+.safe span{background:var(--card);border-radius:12px;padding:8px 12px;font-size:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.gc{background:var(--card);border-radius:18px;padding:16px;cursor:pointer;box-shadow:0 2px 8px #0002}
+.gc .e{font-size:48px}
+.modal{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;padding:16px;z-index:9}
+.modal.on{display:flex}
+.box{background:var(--card);border-radius:20px;padding:18px;max-width:560px;width:100%;max-height:90%;overflow:auto}
+#bar{display:none;justify-content:space-between;align-items:center;background:var(--card);border-radius:12px;padding:6px 12px;margin:8px 0}
+#bar.on{display:flex}
+.mem{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:380px;margin:auto}
+.mc{aspect-ratio:1;font-size:36px;border-radius:12px;background:var(--acc);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none}
+.mc.f{background:var(--card);border:2px solid var(--acc)}
+.mc.d{background:var(--ok);opacity:.6}
+#arena{position:relative;height:340px;max-width:420px;margin:auto;background:var(--card);border-radius:16px;overflow:hidden;touch-action:none}
+.fall{position:absolute;font-size:30px;top:-40px}
+#bask{position:absolute;bottom:4px;font-size:40px}
+.opt{font-size:34px;min-width:64px}
+.pv{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.pv div{background:var(--bg);border-radius:12px;height:110px;position:relative;overflow:hidden;font-size:26px}
+.pv small{position:absolute;bottom:2px;inset-inline:0}
+.pa i{position:absolute;font-style:normal;top:-30px;animation:fl 2s linear infinite}
+@keyframes fl{to{top:110px}}
+.pb span{display:inline-block;margin:14px 2px;animation:fp 2s steps(1) infinite}
+@keyframes fp{50%{transform:rotateY(180deg);opacity:.4}}
+.pc b{display:block;font-size:44px;margin-top:20px;animation:lt 3s steps(1) infinite}
+.pv{grid-template-columns:repeat(2,1fr)}.pv b{position:absolute;font-weight:400}
+.p1 b{inset-inline:0;bottom:24px;font-size:44px;transform-origin:bottom;animation:gr 3s ease-in-out infinite}@keyframes gr{0%{transform:scale(.3)}70%,100%{transform:scale(1)}}
+.p2 b{top:26px;font-size:40px;animation:sl2 4s linear infinite}@keyframes sl2{from{right:-20%}to{right:100%}}
+.p3 b{inset-inline:0;bottom:26px;font-size:42px;animation:hp 1.6s ease-in-out infinite}@keyframes hp{50%{transform:translateY(-22px) rotate(15deg)}}
+.p4 b{bottom:28px;font-size:34px;right:40%}.p4 b+b{right:15%;animation:jp 2.4s ease-in-out infinite}@keyframes jp{0%,15%{transform:none}45%{transform:translate(-57px,-26px)}75%,100%{transform:translate(-114px,0)}}
+@keyframes lt{0%{content:"x"}}
+</style>
+</head>
+<body>
+<main>
+<h1>ילד שעשועים</h1>
+<p>סובבו את הסביבון והוא יבחר לכם משחק</p>
+<div class="top" id="top" role="button" aria-label="סובבו את הסביבון">🪀</div>
+<div class="safe"><span>🚫 בלי פרסומות</span><span>🔒 בלי צ'אט</span><span>📖 תוכן נקי ושמח</span><span>⏳ זמן מסך בריא</span></div>
+<button id="peek">🎬 הצצה למשחקים</button><button class="alt" id="tm">⏱️ קבעו טיימר</button>
+<div id="bar"><span>נשאר: <b id="left">--</b></span><span id="pts">⭐ 0</span></div>
+<div class="grid" id="list"></div>
+<div id="stage"></div>
+</main>
+
+<div class="modal" id="m1"><div class="box"><h2>כמה זמן משחקים?</h2>
+<button data-m="5">5 דקות</button><button data-m="10">10 דקות</button><button data-m="15">15 דקות</button><button class="alt" data-m="0">בלי טיימר</button>
+<p style="font-size:13px">כשהזמן נגמר, המשחקים נעצרים להפסקה. מי שעוצר בזמן מקבל כוכב ⭐</p></div></div>
+
+<div class="modal" id="m2"><div class="box"><h2>הצצה למשחקים</h2><p>קטעים קצרים שמראים איך המשחקים נראים</p>
+<div class="pv">
+<div class="pb"><span>🍎</span><span>🍎</span><span>🐘</span><span>🐘</span><small>זיכרון</small></div>
+<div class="pa"><i style="right:15%">🍎</i><i style="right:45%;animation-delay:.6s">🍌</i><i style="right:75%;animation-delay:1.2s">⭐</i><small>תופסים</small></div>
+<div class="pc"><b>🐟 ?</b><small>אותיות</small></div></div>
+<button class="alt" onclick="cls('m2')">סגירה</button></div></div>
+
+<div class="modal" id="m3"><div class="box"><h2>זמן להפסקה ☕</h2><p>המשחקים חוזרים בעוד <b id="brk"></b></p></div></div>
+
+<script>
+const $=s=>document.querySelector(s);
+const cls=id=>$('#'+id).classList.remove('on'),opn=id=>$('#'+id).classList.add('on');
+let pts=0,tl=0,tmr=null,brk=0,stop=null;
+const games=[{n:'בונים את המקדש',e:'🕍',f:templeLink},{n:'סוחר הים',e:'⛵',f:seaLink},{n:'שחמט תלתימדי',e:'♟️',f:chessLink},{n:'דמקה תלתימדית',e:'⚪',f:checkersLink},{n:'חנוכה',e:'🕎',f:chanukaLink}];
+$('#list').innerHTML=games.map((g,i)=>`<div class="gc" data-i="${i}"><div class="e">${g.e}</div><b>${g.n}</b></div>`).join('');
+$('#list').onclick=e=>{const c=e.target.closest('.gc');if(c)start(+c.dataset.i)};
+$('#top').onclick=()=>{const t=$('#top');t.style.transform='rotate('+(1080+Math.random()*360)+'deg)';setTimeout(()=>{t.style.transform='';start(Math.floor(Math.random()*games.length))},1500)};
+$('.pv').innerHTML='<div class="p1"><b>🕍</b><small>בונים את המקדש</small></div><div class="p2"><b>⛵</b><span style="position:absolute;bottom:22px;inset-inline:0;font-size:22px">🌊🌊🌊🌊</span><small>סוחר הים</small></div><div class="p3"><b>♞</b><small>שחמט תלתימדי</small></div><div class="p4"><b>⚪</b><b>🟤</b><small>דמקה תלתימדית</small></div>';
+$('#peek').onclick=()=>opn('m2');$('#tm').onclick=()=>opn('m1');
+document.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{cls('m1');setTimer(+b.dataset.m)});
+function setTimer(m){clearInterval(tmr);$('#bar').classList.add('on');if(!m){$('#left').textContent='ללא';return}
+tl=m*60;tmr=setInterval(()=>{tl--;$('#left').textContent=Math.floor(tl/60)+':'+String(tl%60).padStart(2,'0');if(tl<=0){clearInterval(tmr);pts++;$('#pts').textContent='⭐ '+pts;endStage();rest()}},1000)}
+function rest(){brk=120;opn('m3');const iv=setInterval(()=>{brk--;$('#brk').textContent=Math.floor(brk/60)+':'+String(brk%60).padStart(2,'0');if(brk<=0){clearInterval(iv);cls('m3')}},1000)}
+function endStage(){if(stop)stop();stop=null;$('#stage').innerHTML=''}
+function start(i){endStage();$('#stage').innerHTML='<h2>'+games[i].n+'</h2><div id="g"></div>';games[i].f($('#g'))}
+function win(){pts++;$('#pts').textContent='⭐ '+pts;$('#bar').classList.add('on')}
+function shuf(a){return a.map(x=>[Math.random(),x]).sort((a,b)=>a[0]-b[0]).map(x=>x[1])}
+
+function memory(el){const em=['🍎','🐘','🌞','🐟','🍌','🐱','🌳','🥕'];let cs=shuf([...em,...em]),open=[],done=0;
+el.innerHTML='<div class="mem">'+cs.map((c,i)=>`<div class="mc" data-i="${i}">?</div>`).join('')+'</div>';
+el.onclick=e=>{const d=e.target.closest('.mc');if(!d||open.length>1||d.classList.contains('f')||d.classList.contains('d'))return;
+d.textContent=cs[d.dataset.i];d.classList.add('f');open.push(d);
+if(open.length==2){const[a,b]=open;if(a.textContent==b.textContent){a.className=b.className='mc d';open=[];if(++done==8){el.insertAdjacentHTML('beforeend','<h3>כל הכבוד! 🎉</h3>');win()}}
+else setTimeout(()=>{a.className=b.className='mc';a.textContent=b.textContent='?';open=[]},800)}}}
+
+function catchG(el){el.innerHTML='<div id="arena"><div id="bask">🧺</div></div><p id="sc">נקודות: 0</p>';
+const ar=$('#arena'),bk=$('#bask');let s=0,x=180,run=true,t=30;bk.style.left=x+'px';
+const mv=e=>{const r=ar.getBoundingClientRect();x=Math.max(0,Math.min(r.width-44,e.clientX-r.left-22));bk.style.left=x+'px'};ar.onpointermove=mv;ar.onpointerdown=mv;
+const sp=setInterval(()=>{const f=document.createElement('div');f.className='fall';f.textContent=['🍎','🍌','🍇','⭐'][Math.floor(Math.random()*4)];
+let y=-40,fx=Math.random()*(ar.clientWidth-36);f.style.left=fx+'px';ar.appendChild(f);
+const m=setInterval(()=>{y+=4;f.style.top=y+'px';if(y>ar.clientHeight-50&&y<ar.clientHeight-10&&Math.abs(fx-x)<44){s++;$('#sc').textContent='נקודות: '+s;f.remove();clearInterval(m)}else if(y>ar.clientHeight){f.remove();clearInterval(m)}},30)},700);
+const cd=setInterval(()=>{if(--t<=0){stop();$('#sc').textContent='סיימנו! '+s+' נקודות 🎉';win()}},1000);
+stop=()=>{clearInterval(sp);clearInterval(cd)}}
+
+function temple(el){const S=[['יסודות','🪨',{s:4}],['קירות','🧱',{s:6,w:3}],['דלתות ארז','🚪',{w:4}],['עטרת זהב','✨',{g:3}],['גג','🏛️',{w:4,s:4}]];
+let r={w:0,s:0,g:0},st=0,gt=0;const nm={w:'🌲 ארז',s:'🪨 אבן',g:'🪙 זהב'};
+const need=o=>Object.entries(o).map(([k,v])=>nm[k]+' '+r[k]+'/'+v).join(' · '),can=o=>Object.entries(o).every(([k,v])=>r[k]>=v);
+function draw(){if(st==S.length){el.innerHTML=`<div style='font-size:70px'>🕍</div><h3>חנוכת הבית! 🎺🎉</h3><p>בית המקדש נבנה, והחגיגה מתחילה!</p>`;win();return}
+const ok=can(S[st][2]);
+el.innerHTML=`<div style='background:var(--card);border-radius:14px;padding:8px;margin:6px 0;text-align:right'>👴 <b>בצלאל:</b> עכשיו בונים: ${S[st][0]}. צריך ${need(S[st][2])}</div>
+<div style='display:flex;flex-direction:column-reverse;align-items:center;min-height:100px'>${S.slice(0,st).map(x=>`<div style='font-size:32px'>${x[1]}</div>`).join('')}</div>
+<p>${nm.w} ${r.w} · ${nm.s} ${r.s} · ${nm.g} ${r.g}</p>
+<button data-k='w'>🪓 כורתים ארז</button><button data-k='s'>⛏️ חוצבים אבן</button><button data-k='g'>⚒️ מכרה זהב</button><br><button data-k='b' ${ok?'':'disabled'} style='${ok?'':'opacity:.4'}'>🔨 בונים: ${S[st][0]}</button>`}
+el.onclick=e=>{const b=e.target.closest('button');if(!b||st>=S.length)return;const k=b.dataset.k;
+if(k=='b'){const o=S[st][2];if(!can(o))return;for(const q in o)r[q]-=o[q];st++}else if(k=='g'){if(++gt%3==0)r.g++}else r[k]++;draw()};draw()}
+function templeLink(el){el.innerHTML='<div style="font-size:60px">🕍</div><p>המשחק התלתימדי נפתח בעמוד נפרד</p><a href="temple/" target="_blank" rel="noopener"><button>לבנות את המקדש 🔨</button></a>'}
+function seaLink(el){el.innerHTML='<div style="font-size:60px">⛵</div><p>משחק הסחר בים נפתח בעמוד נפרד</p><a href="sea/" target="_blank" rel="noopener"><button>להפליג ⛵</button></a>'}
+function chessLink(el){el.innerHTML='<div style="font-size:60px">♟️</div><p>השחמט התלתימדי נפתח בעמוד נפרד</p><a href="board/#chess" target="_blank" rel="noopener"><button>לשחק שחמט ♟️</button></a>'}
+function checkersLink(el){el.innerHTML='<div style="font-size:60px">⚪</div><p>הדמקה התלתימדית נפתחת בעמוד נפרד</p><a href="board/#checkers" target="_blank" rel="noopener"><button>לשחק דמקה ⚪</button></a>'}
+function chanukaLink(el){el.innerHTML='<div style="font-size:60px">🕎</div><p>משחק חנוכה נפתח בעמוד נפרד</p><a href="chanuka/" target="_blank" rel="noopener"><button>לשחק חנוכה 🕎</button></a>'}
+function templeOld(el){el.innerHTML='<p>לחצו על האבן כדי להניח אותה בדיוק על הקודמת. בנו 8 שכבות!</p><div id="ta" style="position:relative;height:300px;width:320px;max-width:100%;margin:auto;background:var(--card);border-radius:16px;overflow:hidden;cursor:pointer;touch-action:manipulation"></div><p id="tmsg"></p>';
+const A=$('#ta'),H=30,N=9,W=320;let layer=1,px=40,pw=240,x=0,w=240,dir=1,sp=3,cur;
+const blk=(l,l0,w0)=>{const d=document.createElement('div');d.style.cssText='position:absolute;height:28px;border-radius:5px;left:'+l0+'px;width:'+w0+'px;bottom:'+(l*H)+'px;background:'+(l>=6?'#e0b84a':'#c9b99a')+';border:2px solid '+(l>=6?'#b8902a':'#9c8b6c');A.appendChild(d);return d};
+blk(0,40,240);const nb=()=>{w=pw;x=0;cur=blk(layer,x,w)};nb();
+const iv=setInterval(()=>{x+=dir*sp;if(x<=0){x=0;dir=1}if(x+w>=W){x=W-w;dir=-1}cur.style.left=x+'px'},16);
+const kd=e=>{if(e.code=='Space'){e.preventDefault();drop()}};document.addEventListener('keydown',kd);
+stop=()=>{clearInterval(iv);document.removeEventListener('keydown',kd)};
+function drop(){const l=Math.max(x,px),r=Math.min(x+w,px+pw),ov=r-l;
+if(ov<=6){stop();stop=null;cur.style.opacity=.4;$('#tmsg').innerHTML='הרבה אבנים נפלו 😅 <button id="rt">עוד פעם</button>';$('#rt').onclick=()=>temple(el);return}
+cur.style.left=l+'px';cur.style.width=ov+'px';px=l;pw=ov;layer++;sp+=.35;
+if(layer==N){stop();stop=null;$('#tmsg').innerHTML='<b>בית המקדש נבנה! 🕍🎉</b>';A.insertAdjacentHTML('beforeend','<div style="position:absolute;top:6px;inset-inline:0;font-size:46px">🕍</div>');win()}else nb()}
+A.onpointerdown=drop}
+function letters(el){const q=[['🍎','ת'],['🐘','פ'],['🌞','ש'],['🐟','ד'],['🍌','ב'],['🐱','ח'],['🌳','ע'],['🥕','ג']];
+const abc='אבגדהוזחטיכלמנסעפצקרשת'.split('');let n=0;
+(function ask(){if(n==5){el.innerHTML='<h3>כל הכבוד! 🎉</h3>';win();return}
+const[e,a]=shuf(q)[0];const o=shuf([a,...shuf(abc.filter(z=>z!=a)).slice(0,2)]);
+el.innerHTML=`<div style="font-size:80px">${e}</div><p>באיזו אות מתחילה המילה?</p>`+o.map(l=>`<button class="opt">${l}</button>`).join('');
+el.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{if(b.textContent==a){n++;ask()}else b.style.opacity=.3})})()}
+</script>
+</body>
+</html>

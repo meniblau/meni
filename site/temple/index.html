@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>בונים את המקדש</title>
+<style>
+:root{--ink:#f6ecd2;--gold:#e9b949;--pn:#1c1a16ee;box-sizing:border-box;color-scheme:dark;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html,body{height:100%;margin:0;background:#1c1a16;color:var(--ink);font-family:Heebo,Arial,sans-serif;overflow:hidden}
+canvas{display:block;position:fixed;inset:0;width:100%;height:100%;touch-action:none}
+#hud{position:fixed;top:env(safe-area-inset-top,0px);inset-inline:0;display:flex;flex-wrap:wrap;gap:4px;padding:6px;font-size:13px;pointer-events:none}
+#hud span{background:var(--pn);padding:3px 8px;border-radius:10px}
+#bar{position:fixed;bottom:env(safe-area-inset-bottom,0px);inset-inline:0;display:flex;flex-wrap:wrap;justify-content:center;gap:6px;padding:8px}#bar button{padding:8px 9px;font-size:14px}
+button{font:inherit;border:1px solid var(--gold);background:#3a3122;color:var(--ink);border-radius:12px;padding:8px 12px;cursor:pointer}
+button:disabled{opacity:.4}
+#pn{position:fixed;inset-inline:8px;bottom:calc(64px + env(safe-area-inset-bottom,0px));max-height:52%;overflow:auto;background:var(--pn);border:1px solid var(--gold);border-radius:16px;padding:12px;display:none;max-width:560px;margin:auto}
+#toast{position:fixed;top:calc(52px + env(safe-area-inset-top,0px));inset-inline:0;text-align:center;pointer-events:none}
+#toast b{background:var(--pn);padding:6px 14px;border-radius:12px;font-weight:400}
+.cf{position:fixed;top:-30px;font-size:28px;animation:cf 4s linear forwards;pointer-events:none}
+@keyframes cf{to{transform:translateY(110vh) rotate(360deg)}}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:6px 0}
+</style>
+</head>
+<body>
+<div id="hud"></div><div id="dn" style="position:fixed;top:calc(8px + env(safe-area-inset-top,0px));left:8px;font-size:22px"></div><div id="toast"></div><div id="pn"></div>
+<div id="bar"><button data-k="map">🗺️ מפה</button><button data-k="craft">🧰 הכנה</button><button data-k="sage">👴 החכם</button><a href="../" target="_blank" rel="noopener"><button>🏠 דף הבית</button></a><button data-k="view">👁️ מבטים</button><button data-k="build">🔨 בנייה</button></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const R=new THREE.WebGLRenderer({antialias:true});R.shadowMap.enabled=true;R.setPixelRatio(Math.min(devicePixelRatio,2));document.body.prepend(R.domElement);
+const sc=new THREE.Scene();sc.background=new THREE.Color(0x9fd6f5);sc.fog=new THREE.Fog(0x9fd6f5,70,200);
+const cam=new THREE.PerspectiveCamera(55,1,.1,400);
+const amb=new THREE.AmbientLight(0xffffff,.65);sc.add(amb);const dl=new THREE.DirectionalLight(0xfff2cc,.8);dl.position.set(20,30,10);dl.castShadow=true;dl.shadow.mapSize.set(2048,2048);Object.assign(dl.shadow.camera,{left:-35,right:35,top:35,bottom:-35,far:100});sc.add(dl);
+function rs(){R.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()}rs();addEventListener('resize',rs);
+const M=c=>new THREE.MeshLambertMaterial({color:c});
+function box(w,h,d,c,x,y,z,p){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d).translate(0,h/2,0),M(c));m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;(p||sc).add(m);return m}
+{const g=new THREE.Mesh(new THREE.PlaneGeometry(500,500).rotateX(-Math.PI/2),M(0x6fae5a));g.receiveShadow=true;sc.add(g)}
+box(4,.06,26,0xddd0a8,0,0,49);
+for(let i=0;i<16;i++){const a=i/16*6.283,h=22+(i*7%15);const m=new THREE.Mesh(new THREE.ConeGeometry(18,h,6).translate(0,h/2,0),M(i%2?0x8a9a78:0x9aa688));m.position.set(Math.sin(a)*150,0,Math.cos(a)*150);sc.add(m)}
+for(let i=0;i<8;i++){const x=(i%2?1:-1)*12,z=40+(i>>1)*5;box(.5,2,.5,0x7a5230,x,0,z);const f=new THREE.Mesh(new THREE.SphereGeometry(1.8,10,8),M(0x4f8a3e));f.position.set(x,3.2,z);f.castShadow=true;sc.add(f)}
+const G=[];
+for(let i=0;i<12;i++){const t=new THREE.Group();box(.7,3,.7,0x7a5230,0,0,0,t);t.add(new THREE.Mesh(new THREE.ConeGeometry(2,5,8).translate(0,5.5,0),M(0x2f6b3a)));t.position.set(-82+(i%4)*5,0,-4+Math.floor(i/4)*6);t.userData={res:'log'};sc.add(t);G.push(t)}
+for(let i=0;i<14;i++){const r=box(2.2,1.6+(i%3)*.5,2,0x9a9a9a,68+(i%5)*3.5,0,-4+Math.floor(i/5)*5);r.rotation.y=i;r.userData={res:'raw'};G.push(r)}
+for(let i=0;i<10;i++){const o=new THREE.Mesh(new THREE.DodecahedronGeometry(1.1),M(0xe0b030));o.position.set(-12+i*2.7,1,-82+(i%2)*3);o.userData={res:'ore'};sc.add(o);G.push(o)}
+for(let i=0;i<10;i++){const o=new THREE.Mesh(new THREE.DodecahedronGeometry(1.1),M(0x9a5a2a));o.position.set(62+(i%5)*3,1,-58+Math.floor(i/5)*4);o.userData={res:'cu'};sc.add(o);G.push(o)}
+const inv={log:0,raw:0,ore:0,beam:0,cut:0,gold:0,cu:0,bronze:0};
+const L={log:'🌲 בולי ארז',raw:'🪨 אבן גולמית',ore:'🟡 עפרת זהב',beam:'🪵 קורות',cut:'🧱 אבן מסותתת',gold:'🥇 לוחות זהב',cu:'🟤 עפרת נחושת',bronze:'🔔 לוחות נחושת'};
+const hud=()=>{$('#hud').innerHTML=Object.keys(inv).map(k=>`<span>${L[k]} ${inv[k]}</span>`).join('');render()};
+let tT;const toast=t=>{$('#toast').innerHTML='<b>'+t+'</b>';clearTimeout(tT);tT=setTimeout(()=>$('#toast').innerHTML='',2200)};
+const Z={site:[[0,46],'ירושלים והר הבית'],forest:[[-76,6],'יער הארזים'],quarry:[[76,6],'המחצבה'],mine:[[0,-70],'מכרה הזהב'],hill:[[64,-48],'הר הנחושת']};
+const tp=new THREE.Vector3(0,16,44),tl=new THREE.Vector3(0,3,4),cl=tl.clone();cam.position.copy(tp);
+function go(z){pl.position.set(Z[z][0][0],0,Z[z][0][1]);fv=null;open='';render();toast('הגעת אל '+Z[z][1])}
+const rc=new THREE.Raycaster(),v=new THREE.Vector2();
+R.domElement.onpointerdown=e=>{v.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);rc.setFromCamera(v,cam);const h=rc.intersectObjects(G.filter(o=>o.visible),true)[0];if(!h)return;let o=h.object;while(o&&!o.userData.res)o=o.parent;if(!o)return;if(o.position.distanceTo(pl.position)>14){toast('התקרבו עוד (W A S D)');return}o.visible=false;inv[o.userData.res]++;toast('+1 '+L[o.userData.res]);hud();setTimeout(()=>o.visible=true,7000)};
+const T=new THREE.Group();sc.add(T);const grow=[];let st=0,done=false,ang=0;
+const gold=0xe9b949;
+const P=[];function person(c,x,z,h,cc,r){const g=new THREE.Group();g.add(new THREE.Mesh(new THREE.CylinderGeometry(.35,.45,1.3).translate(0,.65,0),M(c)),new THREE.Mesh(new THREE.SphereGeometry(.28).translate(0,1.55,0),M(0xe8b88a)));g.position.set(x,0,z);g.userData={t:new THREE.Vector3(x,0,z),h:new THREE.Vector3(h?h[0]:x,0,h?h[1]:z),c:new THREE.Vector3(cc?cc[0]:0,0,cc?cc[1]:24),r:r||[9,5]};sc.add(g);P.push(g);return g}
+[[-3,40],[3,41],[7,42],[-7,43]].forEach(([x,z],i)=>person(0x3a6ea5,x,z,[-20+i*8,38]));
+const pl=person(0xc0392b,0,46);P.pop();
+const WL=0xd9c8a0;box(118,5,1.5,WL,0,0,-62);box(53,5,1.5,WL,-31.5,0,72);box(53,5,1.5,WL,31.5,0,72);box(1.5,5,134,WL,-58,0,5);box(1.5,5,134,WL,58,0,5);
+let kk=0;for(let gx=-54;gx<=54;gx+=12)for(let gz=-54;gz<=66;gz+=12){if(Math.abs(gx)<30&&gz>-36&&gz<40)continue;const h=3+Math.abs((gx*5+gz*3)%3);box(6,h,6,[0xe3d3b0,0xd8c49a,0xeadcbc][(Math.abs(gx+gz)/12|0)%3],gx,0,gz);box(1.2,2,.1,0x4a3420,gx,0,gz+3.05);if(kk++%2==0)person([0x8a5a3a,0x5a7a3a,0x7a3a5a][kk%3],gx,gz+5,[gx,gz+3.8],[gx,gz+6],[5,2])}
+const S=[
+['יסודות',{cut:3},()=>{box(20,.5,24,0xcfc6b0,0,0,0,T);box(16,.5,20,0xb8b0a0,0,.5,0,T);box(5,.25,2,0xcfc6b0,0,0,12.5,T);box(5,.25,1.5,0xcfc6b0,0,.25,12,T)}],
+['קירות',{cut:4,beam:2},()=>{box(8,5,12,0xefe4c8,0,1,0,T);box(8.6,.4,12.6,0xd9c9a0,0,5.8,0,T);[-4,0,4].forEach(z=>[-4.02,4.02].forEach(x=>box(.1,1.2,.8,0x3a2a1a,x,3,z,T)));[[-9,-10],[9,-10],[-9,10],[9,10]].forEach(([x,z])=>box(1.4,3,1.4,0xe0d4b4,x,1,z,T));box(18,1.5,.5,0xd8cdb0,0,1,10,T);box(18,1.5,.5,0xd8cdb0,0,1,-10,T);box(.5,1.5,20,0xd8cdb0,9,1,0,T);box(.5,1.5,20,0xd8cdb0,-9,1,0,T)}],
+['דלתות ארז',{beam:4},()=>box(2.4,3.6,.3,0x7a4a24,0,1,6.1,T)],
+['ציפוי זהב',{gold:2},()=>{box(.25,4.4,10,gold,4.1,1.3,0,T);box(.25,4.4,10,gold,-4.1,1.3,0,T);box(3.4,.4,.3,gold,0,4.7,6.15,T)}],
+['גג',{beam:4,cut:2},()=>{box(9.4,.7,13,0x8a5a3a,0,6,0,T);box(2,.6,2,gold,0,6.7,0,T);for(let z=-6;z<=6;z+=1.5)[-4.6,4.6].forEach(x=>box(.12,.5,.12,gold,x,6.7,z,T))}],
+['שער החצר',{cut:3,beam:2},()=>{box(1,4.5,1,0xd8cdb0,-2.5,1,10.2,T);box(1,4.5,1,0xd8cdb0,2.5,1,10.2,T);box(6,.7,1.2,0x8a5a3a,0,5.5,10.2,T)}],
+['מזבח',{bronze:2,cut:2},()=>{box(2.6,1.5,2.6,0xc07a3a,5,1,8,T);[[3.9,6.9],[6.1,6.9],[3.9,9.1],[6.1,9.1]].forEach(([x,z])=>box(.4,.6,.4,0xc07a3a,x,2.5,z,T))}],
+['כיור נחושת',{bronze:2},()=>{const c=new THREE.Mesh(new THREE.CylinderGeometry(1,.8,1.3,16).translate(0,.65,0),M(0xc07a3a));c.position.set(-5,1,8);T.add(c)}],
+['עמודי זהב',{gold:2,cut:2},()=>{box(.7,5.5,.7,gold,-1.6,1,6.6,T);box(.7,5.5,.7,gold,1.6,1,6.6,T);box(1.1,.4,1.1,gold,-1.6,6.5,6.6,T);box(1.1,.4,1.1,gold,1.6,6.5,6.6,T)}],
+['מנורה בחצר',{gold:2},()=>{box(.8,.2,.8,gold,0,1,8,T);for(let i=-3;i<=3;i++){box(.15,1.2+(i==0?.4:0),.15,gold,i*.45,1.2,8,T);const f=new THREE.Mesh(new THREE.SphereGeometry(.14),M(0xff9a1a));f.position.set(i*.45,2.5+(i==0?.4:0),8);T.add(f)}}]];
+const b=(w,h,d,c,x,y,z)=>box(w,h,d,c,x,y,z,T),wl=0xe8dcc0,br=0xc07a3a,sn=0xcfc6b0;
+S.splice(0,S.length,
+['יסודות הר הבית',{cut:2},()=>{b(48,1,66,sn,0,0,3);b(12,.5,1.5,sn,0,0,34.5)}],
+['חומות וסטיו',{cut:2,beam:3},()=>{b(1,4,66,wl,-23.5,1,3);b(1,4,66,wl,23.5,1,3);b(48,4,1,wl,0,1,-29.5);b(19,4,1,wl,-14.5,1,35.5);b(19,4,1,wl,14.5,1,35.5);for(let z=-28;z<=34;z+=3)[-22,22].forEach(x=>b(.5,3.2,.5,0xf5efe0,x,1,z));b(2.8,.4,66,0x8a5a3a,-22.3,4.2,3);b(2.8,.4,66,0x8a5a3a,22.3,4.2,3)}],
+['שער ניקנור וחצר הנשים',{cut:1,bronze:1},()=>{b(7,4,1,wl,-7.5,1,17);b(7,4,1,wl,7.5,1,17);[-2.8,2.8].forEach(x=>b(1.2,5.5,1.2,br,x,1,17));b(7.2,.8,1.4,br,0,6.5,17);b(1,4,13,wl,-11,1,23.5);b(1,4,13,wl,11,1,23.5);b(7,4,1,wl,-7.5,1,30);b(7,4,1,wl,7.5,1,30);[-4.2,4.2].forEach(x=>b(1,5,1,0xf5efe0,x,1,30));b(9.4,.7,1.2,0xf5efe0,0,6,30);[-9.3,9.3].forEach(x=>[18.8,28.2].forEach(z=>b(2.4,2.4,2.4,0xd9cfae,x,1,z)))}],
+['העזרה',{cut:2},()=>{b(1,4,31,wl,-11,1,1.5);b(1,4,31,wl,11,1,1.5);b(22,4,1,wl,0,1,-14)}],
+['המזבח והכבש',{cut:1,bronze:1},()=>{b(7,1.5,7,0xb8b0a0,0,1,12.5);[[-3,9.5],[3,9.5],[-3,15.5],[3,15.5]].forEach(([x,z])=>b(.7,.7,.7,br,x,2.5,z));for(let i=0;i<5;i++)b(1.2,1.5-i*.28,3,0xb8b0a0,4.1+i*1.2,1,12.5)}],
+['הכיור',{bronze:1},()=>{const c=new THREE.Mesh(new THREE.CylinderGeometry(1,.8,1.3,16).translate(0,.65,0),M(br));c.position.set(-6.5,1,12.5);c.castShadow=true;T.add(c)}],
+['האולם וההיכל',{cut:3,beam:2},()=>{b(9,7,16,0xefe4c8,0,1,-3);b(15,10,3,0xf3ead2,0,1,6.5);b(2.5,3.5,12,0xd9cfae,-6.75,1,-4);b(2.5,3.5,12,0xd9cfae,6.75,1,-4);b(11,3.5,2.5,0xd9cfae,0,1,-12.25);[-4,0,4].forEach(z=>[-4.55,4.55].forEach(x=>b(.1,1.4,.8,0x3a2a1a,x,5,z)))}],
+['דלתות ארז',{beam:3},()=>{b(4,6.5,.3,0x7a4a24,0,1,8.1);b(5,.5,.4,0x5a3818,0,7.5,8.1)}],
+['ציפוי זהב',{gold:3},()=>{[-1,1].forEach(s=>{b(3,9.2,.25,gold,s*3.5,1,8.15);b(2.2,9.2,.25,gold,s*6.4,1,8.15)});b(15.4,.8,3.4,gold,0,11,6.5);b(4,2.5,.25,gold,0,7.9,8.15)}],
+['גג',{beam:3,cut:1},()=>{b(10,.6,17,0x8a5a3a,0,8,-3);b(2.9,.4,12.4,0x8a5a3a,-6.75,4.5,-4);b(2.9,.4,12.4,0x8a5a3a,6.75,4.5,-4);for(let x=-7;x<=7;x+=1.4)b(.12,.7,.12,gold,x,11.8,8)}],
+['יכין ובועז ומנורה',{gold:2,bronze:1},()=>{[-4.2,4.2].forEach(x=>{b(1,7,1,br,x,1,9.4);b(1.5,.5,1.5,br,x,8,9.4)});b(.8,.2,.8,gold,0,1,19.5);for(let i=-3;i<=3;i++){b(.15,1.2+(i==0?.4:0),.15,gold,i*.45,1.2,19.5);const f=new THREE.Mesh(new THREE.SphereGeometry(.14),M(0xff9a1a));f.position.set(i*.45,2.5+(i==0?.4:0),19.5);T.add(f)}}]);
+const missing=()=>{const n=S[st][1];return Object.keys(n).filter(k=>inv[k]<n[k]).map(k=>(n[k]-inv[k])+' '+L[k]).join(' · ')};
+function doBuild(){const n=S[st][1];if(Object.keys(n).some(k=>inv[k]<n[k]))return;for(const k in n)inv[k]-=n[k];const b=T.children.length;S[st][2]();for(let i=b;i<T.children.length;i++){T.children[i].scale.y=.02;grow.push(T.children[i])}st++;toast('נבנה: '+S[st-1][0]);if(st==S.length){done=true;open='';tp.set(0,16,46);for(let i=0;i<5;i++)person(0xffffff,-8+i*4,14,[-10+i*5,39],[0,22],[8,4]);for(let i=0;i<40;i++)setTimeout(()=>{const c=document.createElement('div');c.className='cf';c.textContent=['🎺','🎉','✨','🕯️'][i%4];c.style.left=Math.random()*100+'%';document.body.appendChild(c);setTimeout(()=>c.remove(),4200)},i*120);pn('<h3>🕍 חנוכת הבית! 🎺</h3><p>בית המקדש נבנה. מתחילים לחגוג, שבעה ימים של שמחה!</p><button data-a="again">שחק שוב</button>')}hud()}
+function craft(a){if(a=='beam'&&inv.log>=1){inv.log--;inv.beam+=2}if(a=='cut'&&inv.raw>=2){inv.raw-=2;inv.cut++}if(a=='gold'&&inv.ore>=2){inv.ore-=2;inv.gold++}if(a=='bronze'&&inv.cu>=2){inv.cu-=2;inv.bronze++}hud()}
+const reply=t=>{if(/ארז|עץ|עצים/.test(t))return 'ארזים גדלים ביער הארזים בצד שמאל. כל בול נחתך לשתי קורות.';if(/אבן|מחצב/.test(t))return 'אבנים יש במחצבה. שתי אבנים גולמיות מסתתות לאבן אחת.';if(/נחושת|הר/.test(t))return 'עפרת נחושת בהר הנחושת, רחוק מזרחה. ממנה מכינים לוחות למזבח ולכיור.';if(/זהב|מכרה/.test(t))return 'עפרת זהב במכרה מאחורי האתר. שתי עפרות הופכות ללוח זהב.';if(/מפה|איפה/.test(t))return q[1]();if(/עכשיו|שלב|חסר/.test(t))return q[0]();if(/שלום|היי/.test(t))return 'שלום לך, בנאי! במה אוכל לעזור?';return 'שאלו אותי על ארז, אבן, זהב, נחושת, המפה או מה עושים עכשיו.'};
+let open='sage',ans='שלום! אני שמעון, חכם הבנאים. הולכים עם המקשים W A S D, ולוחצים E ליד עץ, אבן או עפרת כדי לאסוף. המפה מעבירה אתכם לכל מקום. שאלו אותי מה עושים עכשיו.';
+const pn=h=>{const p=$('#pn');p.innerHTML=h;p.style.display=h?'block':'none'};
+const q=[()=>done?'סיימנו, המקדש עומד!':`השלב הבא: ${S[st][0]}. חסר לך: ${missing()||'הכול מוכן, לחצו על בנייה!'}`,()=>'ארז ביער, אבן במחצבה, זהב במכרה ונחושת בהר הנחושת. פתחו את המפה כדי ללכת לשם.',()=>'בלשונית ההכנה: בול ארז נחתך ל־2 קורות, 2 אבנים גולמיות מסתתות לאבן אחת, ו־2 עפרות נהפכות ללוח זהב או נחושת.',()=>done?'לא נשאר כלום!':'נשאר לבנות: '+S.slice(st).map(s=>s[0]).join(', ')];
+function render(){if(done&&open==''){return}
+const p={map:()=>pn(`<b>מפה</b><svg viewBox='0 0 300 200' style='width:100%;margin-top:6px'><rect width='300' height='200' rx='10' fill='#6fae5a'/><g data-z='forest'><rect x='15' y='70' width='80' height='60' rx='8' fill='#2f6b3a'/><text x='55' y='105' fill='#fff' font-size='13' text-anchor='middle'>🌲 יער הארזים</text></g><g data-z='quarry'><rect x='205' y='70' width='80' height='60' rx='8' fill='#8d8d8d'/><text x='245' y='105' fill='#fff' font-size='13' text-anchor='middle'>🪨 מחצבה</text></g><g data-z='mine'><rect x='110' y='8' width='80' height='45' rx='8' fill='#b8902a'/><text x='150' y='36' fill='#fff' font-size='13' text-anchor='middle'>🟡 מכרה זהב</text></g><g data-z='hill'><rect x='205' y='8' width='80' height='45' rx='8' fill='#9a5a2a'/><text x='245' y='36' fill='#fff' font-size='13' text-anchor='middle'>🟤 הר נחושת</text></g><g data-z='site'><rect x='110' y='80' width='80' height='60' rx='8' fill='#d8c9a0'/><text x='150' y='115' fill='#333' font-size='13' text-anchor='middle'>🕍 אתר הבנייה</text></g></svg><p style='font-size:13px'>לחצו על מקום כדי ללכת אליו.</p>`),
+craft:()=>pn(`<b>הכנת חומרים</b><div class='row'><span>בול ארז ← 2 קורות</span><button data-a='beam' ${inv.log<1?'disabled':''}>הכן</button></div><div class='row'><span>2 אבנים גולמיות ← אבן מסותתת</span><button data-a='cut' ${inv.raw<2?'disabled':''}>הכן</button></div><div class='row'><span>2 עפרות ← לוח זהב</span><button data-a='gold' ${inv.ore<2?'disabled':''}>הכן</button></div><div class='row'><span>2 עפרות נחושת ← לוח נחושת</span><button data-a='bronze' ${inv.cu<2?'disabled':''}>הכן</button></div>`),
+sage:()=>pn(`<b>👴 שמעון החכם</b><p>${ans}</p><button data-q='0'>מה עכשיו?</button><button data-q='1'>איפה משיגים?</button><button data-q='2'>איך מכינים?</button><button data-q='3'>מה נשאר?</button><div class='row'><input id='qi' placeholder='שאלו את החכם...' style='flex:1;padding:8px;border-radius:10px;border:1px solid #e9b949;background:#2a251c;color:#f6ecd2'><button data-a='ask'>שלח</button></div>`),
+view:()=>pn(`<b>מבטים על המקדש</b><div style='margin-top:8px'><button data-v='f'>חזית</button><button data-v='b'>אחור</button><button data-v='l'>צד שמאל</button><button data-v='r'>צד ימין</button><button data-v='a'>מלמעלה</button></div>`),
+build:()=>pn(`<b>בנייה</b>`+S.map((s,i)=>`<div class='row'><span>${i<st?'✅':i==st?'👉':'⬜'} ${s[0]}: ${Object.keys(s[1]).map(k=>L[k]+' '+s[1][k]).join(', ')}</span>${i==st&&!done?`<button data-a='build' ${missing()?'disabled':''}>בנו</button>`:''}</div>`).join(''))};
+(p[open]||(()=>pn('')))()}
+$('#pn').onclick=e=>{const z=e.target.closest('[data-z]'),a=e.target.closest('[data-a]'),b=e.target.closest('[data-q]');if(z)go(z.dataset.z);const w=e.target.closest('[data-v]');if(w){fv=[{f:[0,22,74],b:[0,22,-64],l:[-76,20,3],r:[76,20,3],a:[0,90,45]}[w.dataset.v],[0,3,3]];open='';render()}if(b){ans=q[+b.dataset.q]();render()}if(a){const k=a.dataset.a;if(k=='build')doBuild();else if(k=='again')location.reload();else if(k=='ask'){ans=reply($('#qi').value);render()}else craft(k)}};
+$('#bar').onclick=e=>{const b=e.target.closest('[data-k]');if(!b)return;open=open==b.dataset.k?'':b.dataset.k;render()};
+let fv=null,tm=.25,day=1,night=false;
+function gat(o){o.visible=false;inv[o.userData.res]++;toast('+1 '+L[o.userData.res]);hud();setTimeout(()=>o.visible=true,7000)}
+const K={};addEventListener('keydown',e=>{if(e.target.tagName=='INPUT')return;K[e.code]=1;if(e.code=='KeyE'){const n=G.filter(o=>o.visible&&o.position.distanceTo(pl.position)<6).sort((a,b)=>a.position.distanceTo(pl.position)-b.position.distanceTo(pl.position))[0];if(n)gat(n)}});addEventListener('keyup',e=>{delete K[e.code]});
+(function loop(){requestAnimationFrame(loop);const mx=(K.KeyD?1:0)-(K.KeyA?1:0),mz=(K.KeyS?1:0)-(K.KeyW?1:0);if(mx||mz){fv=null;const n=Math.hypot(mx,mz);pl.position.x=Math.max(-110,Math.min(110,pl.position.x+mx/n*.35));pl.position.z=Math.max(-110,Math.min(110,pl.position.z+mz/n*.35));pl.rotation.y=Math.atan2(mx,mz)}if(fv){tp.set(...fv[0]);tl.set(...fv[1])}else if(done&&!mx&&!mz){ang+=.004;tp.set(Math.sin(ang)*46,16,3+Math.cos(ang)*46);tl.set(0,3,3)}else{tp.set(pl.position.x,11,pl.position.z+17);tl.set(pl.position.x,2,pl.position.z)}
+tm=(tm+.00006)%1;const sa=tm*6.283,sd=Math.sin(sa);day=Math.max(0,Math.min(1,(sd+.5)*2.5));night=day<.12;dl.position.set(Math.cos(sa)*40,Math.max(sd,.15)*40+5,15);dl.intensity=.15+.75*day;amb.intensity=.2+.5*day;const sk=new THREE.Color(0x0b1330).lerp(new THREE.Color(0x9fd6f5),day);sc.background=sk;sc.fog.color=sk;$('#dn').textContent=night?'🌙':day>.6?'☀️':'🌇';
+for(const p of P){const u=p.userData,t=u.t;if(night)t.copy(u.h);const d=t.clone().sub(p.position);if(d.length()<.3){if(night){p.rotation.x=-1.5;p.position.y=.3}else{p.rotation.x=0;p.position.y=0;t.set(u.c.x+(Math.random()*2-1)*u.r[0],0,u.c.z+(Math.random()*2-1)*u.r[1])}}else{p.rotation.x=0;p.position.y=0;d.normalize();p.position.addScaledVector(d,.06);p.rotation.y=Math.atan2(d.x,d.z)}}cam.position.lerp(tp,.06);cl.lerp(tl,.06);cam.lookAt(cl);for(const m of grow)if(m.scale.y<1)m.scale.y=Math.min(1,m.scale.y+.04);R.render(sc,cam)})();
+hud();
+</script>
+</body>
+</html>

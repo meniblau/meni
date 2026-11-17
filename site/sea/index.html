@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>סוחר הים</title>
+<style>
+:root{--card:#fffaf0;--ink:#1d3557;--acc:#2a7de1;--ok:#2e9e5b;box-sizing:border-box;color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--card:#1b3652;--ink:#eaf4ff;--acc:#6db3ff;--ok:#5fd493;color-scheme:dark}}
+:root[data-theme="dark"]{--card:#1b3652;--ink:#eaf4ff;--acc:#6db3ff;--ok:#5fd493}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden;background:#9fd6f5;color:var(--ink);font-family:Heebo,"Segoe UI",Arial,sans-serif}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#hud{position:fixed;top:env(safe-area-inset-top,0px);inset-inline:0;display:flex;flex-wrap:wrap;gap:4px;padding:6px;font-size:13px;pointer-events:none}
+#hud span,#hud a{background:var(--card);border-radius:10px;padding:3px 8px;color:var(--ink);text-decoration:none;pointer-events:auto}
+#qb{position:fixed;top:calc(66px + env(safe-area-inset-top,0px));inset-inline:6px;background:var(--card);border-radius:10px;padding:4px 10px;font-size:13px;max-width:640px;margin:auto}
+#dock{position:fixed;bottom:env(safe-area-inset-bottom,0px);inset-inline:0;max-width:640px;margin:auto;padding:6px}
+#panel{background:var(--card);border-radius:14px;padding:8px;max-height:42vh;overflow:auto;display:none;margin-bottom:6px}
+#tabs{display:flex;gap:6px;justify-content:center}
+button{font:inherit;border:0;border-radius:12px;padding:8px 12px;background:var(--acc);color:#fff;cursor:pointer;margin:2px}
+button.alt{background:var(--card);color:var(--ink);border:2px solid var(--acc)}
+#tabs button{flex:1;margin:0;background:var(--card);color:var(--ink);border:2px solid var(--acc)}
+#tabs button.on{background:#e9b949;border-color:#e9b949;color:#1d3557}
+.row{display:flex;justify-content:space-between;align-items:center;gap:6px;border-bottom:1px solid #8884;padding:6px 2px}
+.bar{height:6px;width:110px;background:#8884;border-radius:4px;overflow:hidden;margin-top:3px}
+.modal{position:fixed;inset:0;background:#000a;display:none;align-items:center;justify-content:center;padding:16px;z-index:9}.modal.on{display:flex}
+.box{background:var(--card);border-radius:18px;padding:20px;max-width:420px;text-align:center}
+</style>
+</head>
+<body>
+<div id="hud"></div><div id="qb"></div>
+<div id="dock"><div id="panel"></div><div id="tabs"><button data-tab="mk">🛒 שוק</button><button data-tab="tr">🧭 להפליג</button><button data-tab="ac">🕋 פעולות</button></div></div>
+<div id="ov" class="modal"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const G=[['תבלינים','🌶️',40],['יין','🍷',30],['משי','🧵',70],['שמן זית','🫒',25],['גבינה','🧀',35],['דגים מלוחים','🐟',20]];
+const PT=[['יפו','🏖️',[1,1.2,1.3,.7,1.1,.9],260,98],['אלכסנדריה','🏛️',[.7,1.3,.9,1.1,1.2,.8],205,118],['רודוס','🏝️',[1.2,.7,1.1,1.3,.9,1],165,82],['קפריסין','⛰️',[1.3,.8,.7,1,1,1.2],225,82],['סלוניקי','🏰',[1.1,1,1.4,.8,.7,1.3],105,48],['קושטא','🕌',[.9,1.2,.7,1.1,1.3,1.1],150,25],['ונציה','🛶',[1.3,.7,1.2,1.4,.8,.9],35,35]];
+let s={gold:300,day:1,loc:0,c:[0,0,0,0,0,0],fund:0,alms:0,m:0,cap:30,q:null},pr=[],busy=false,open=null,storm=false;
+const load=()=>s.c.reduce((a,b)=>a+b,0),shab=()=>s.day%7==0,dist=i=>Math.max(1,Math.round(Math.hypot(PT[i][3]-PT[s.loc][3],PT[i][4]-PT[s.loc][4])/45));
+const rollP=()=>{pr=G.map((g,i)=>Math.round(g[2]*PT[s.loc][2][i]*(.85+Math.random()*.3)))};rollP();
+/* ---------- 3D ---------- */
+const R=new THREE.WebGLRenderer({antialias:true});R.setPixelRatio(Math.min(devicePixelRatio,2));document.body.prepend(R.domElement);
+const sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(55,1,.1,1200),M=c=>new THREE.MeshLambertMaterial({color:c});
+sc.add(new THREE.AmbientLight(0xffffff,.7));const dl=new THREE.DirectionalLight(0xffffff,.8);dl.position.set(50,80,30);sc.add(dl);
+function rs(){R.setSize(innerWidth,innerHeight);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()}rs();addEventListener('resize',rs);
+function setSky(){const c=storm?0x3a4656:shab()?0x4a3566:0x9fd6f5;sc.background=new THREE.Color(c);sc.fog=new THREE.Fog(c,150,600);dl.intensity=storm?.4:shab()?.5:.8}
+const sea=new THREE.Mesh(new THREE.PlaneGeometry(1000,800,70,55).rotateX(-Math.PI/2),M(0x1f7bd8));sc.add(sea);const pa=sea.geometry.attributes.position.array;
+const K=1.4,pos=p=>new THREE.Vector3((p[3]-150)*K,0,(p[4]-70)*K),at=i=>pos(PT[i]).add(new THREE.Vector3(24,0,16));
+const bx=(w,h,d,c,x,y,z,p)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d).translate(0,h/2,0),M(c));m.position.set(x,y,z);p.add(m);return m};
+function lab(t){const c=document.createElement('canvas');c.width=256;c.height=64;const x=c.getContext('2d');x.fillStyle='rgba(0,0,0,.5)';x.fillRect(0,0,256,64);x.fillStyle='#fff';x.font='bold 34px Arial';x.textAlign='center';x.fillText(t,128,44);const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),depthTest:false}));sp.scale.set(26,6.5,1);sp.position.y=18;return sp}
+const isl=[];let bm,dome;
+PT.forEach((p,i)=>{const g=new THREE.Group();g.position.copy(pos(p));g.userData.i=i;
+const b=new THREE.Mesh(new THREE.CylinderGeometry(15,19,3,20).translate(0,1,0),M(0xe3cf9a));g.add(b);
+[[-7,5],[8,-4],[2,10]].forEach((q,k)=>bx(4,3+k,4,k%2?0xd8c49a:0xe8dcc0,q[0],2.5,q[1],g));
+[[-9,-6],[10,6]].forEach(q=>{const t=new THREE.Mesh(new THREE.CylinderGeometry(.4,.5,5).translate(0,2.5,0),M(0x7a5230));t.position.set(q[0],2.5,q[1]);g.add(t);const f=new THREE.Mesh(new THREE.SphereGeometry(2.4,8,6),M(0x3f8a3a));f.position.set(q[0],8,q[1]);g.add(f)});
+g.add(lab(p[0]));if(i==0){bm=bx(6,6,6,0xf3ead2,0,2.5,-1,g);dome=new THREE.Mesh(new THREE.SphereGeometry(3.3,12,8),M(0xe9b949));dome.position.set(0,9,-1);g.add(dome)}
+sc.add(g);isl.push(g)});
+const ship=new THREE.Group();bx(4,1.6,10,0x7a4a24,0,0,0,ship);const mast=new THREE.Mesh(new THREE.CylinderGeometry(.2,.2,9).translate(0,4.5,0),M(0x5a3818));mast.position.set(0,1.6,0);ship.add(mast);bx(.2,6,5,0xffffff,0,3,-.5,ship);bx(.1,1.2,2,0xc0392b,0,9.8,0,ship);
+sc.add(ship);ship.position.copy(at(0));const ct=ship.position.clone();
+function move(to){return new Promise(res=>{const a=ship.position.clone(),b=at(to),t0=performance.now();ship.rotation.y=Math.atan2(b.x-a.x,b.z-a.z);(function f(){const k=Math.min(1,(performance.now()-t0)/3400);ship.position.lerpVectors(a,b,k);if(k<1)requestAnimationFrame(f);else res()})()})}
+const rc=new THREE.Raycaster(),v2=new THREE.Vector2();
+R.domElement.onpointerdown=e=>{v2.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);rc.setFromCamera(v2,cam);const h=rc.intersectObjects(isl,true)[0];if(!h)return;let o=h.object;while(o&&o.userData.i==null)o=o.parent;if(o)sail(o.userData.i)};
+(function loop(t){requestAnimationFrame(loop);t*=.001;const k=storm?2.2:1;for(let i=0;i<pa.length;i+=3)pa[i+1]=(Math.sin(pa[i]*.05+t*k)*1.1+Math.cos(pa[i+2]*.07+t*.8*k)*.9)*k;sea.geometry.attributes.position.needsUpdate=true;
+ship.position.y=Math.sin(t*2)*.5*k+.8;ship.rotation.z=storm?Math.sin(t*3)*.15:0;ct.lerp(ship.position,.08);cam.position.lerp(ship.position.clone().add(new THREE.Vector3(0,24,42)),.05);cam.lookAt(ct);R.render(sc,cam)})(0);
+/* ---------- משחק ---------- */
+function msg(t,btn,f){$('#ov').innerHTML='<div class="box"><p>'+t+'</p><br><button id="ok">'+(btn||'המשך')+'</button></div>';$('#ov').classList.add('on');$('#ok').onclick=()=>{$('#ov').classList.remove('on');if(f)f()}}
+function ask(t,o){return new Promise(r=>{$('#ov').innerHTML='<div class="box"><p>'+t+'</p><br>'+o.map((x,i)=>'<button data-c="'+i+'">'+x+'</button>').join('')+'</div>';$('#ov').classList.add('on');$('#ov').onclick=e=>{const b=e.target.closest('[data-c]');if(!b)return;$('#ov').classList.remove('on');$('#ov').onclick=null;r(+b.dataset.c)}})}
+const SH='🕯️ שבת שלום! היום נחים, בלי קנייה, מכירה והפלגה.';
+function buy(i,n){if(busy)return;if(shab())return msg(SH);n=Math.min(n,s.cap-load(),Math.floor(s.gold/pr[i]));if(n<=0)return msg('אין מקום בספינה או מספיק מטבעות.');s.gold-=n*pr[i];s.c[i]+=n;render()}
+function sell(i){if(busy)return;if(shab())return msg(SH);const n=s.c[i];if(!n)return;const rev=n*Math.round(pr[i]*.9),m=Math.floor(rev*.1);s.gold+=rev-m;s.m+=m;s.c[i]=0;render()}
+function give(){const a=s.m;if(a<1)return msg('אין עדיין כסף מעשר. כל מכירה מפרישה עשירית.');s.alms+=a;s.m=0;render();msg('חילקתם '+a+' מטבעות לנזקקים. בהצלחה בדרככם!')}
+function fundIt(){if(shab())return msg(SH);const a=Math.min(100,s.gold);if(a<=0)return;s.gold-=a;s.fund+=a;render();if(s.fund>=1000)msg('🏛️📚 בית המדרש ביפו נבנה בזכותכם! עכשיו לומדים בו בבוקר ובערב.<br>סיימתם ב־'+s.day+' ימים.','משחק חדש',()=>location.reload())}
+function rest(){s.day++;rollP();render()}
+function newQ(){s.q={g:Math.floor(Math.random()*6),p:1+Math.floor(Math.random()*6),n:4+Math.floor(Math.random()*5),r:120+Math.floor(Math.random()*120)}}newQ();
+function qDo(){const q=s.q;if(s.loc!=q.p||s.c[q.g]<q.n)return msg('צריך להגיע אל '+PT[q.p][0]+' עם '+q.n+' '+G[q.g][0]+'.');s.c[q.g]-=q.n;s.gold+=q.r;newQ();render();msg('📜 מסרתם את ההזמנה וקיבלתם '+q.r+' מטבעות!')}
+function upg(){const c=s.cap*10;if(s.gold<c)return msg('שדרוג עולה '+c+' מטבעות.');s.gold-=c;s.cap+=10;render();msg('הספינה גדלה, עכשיו '+s.cap+' מקומות.')}
+async function sail(to){if(busy||to==s.loc)return;if(shab())return msg(SH);const d=dist(to),cost=10*d;if(s.gold<cost)return msg('אין מספיק מטבעות לשכר המלחים ('+cost+').');
+busy=true;s.gold-=cost;open=null;render();
+await new Promise(r=>msg('🙏 תפילת הדרך<br>יהי רצון שנפליג בשלום ונגיע ליעדנו בשלווה.','מפליגים',r));
+const r=Math.random();storm=r<.28;setSky();await move(to);
+let ev='הים היה שקט והגעתם בשלום.';
+if(storm){storm=false;setSky();const k=await ask('⛈️ סערה בלב ים! מה עושים?',['מקלים על הספינה וזורקים רבע מהמטען','מתפללים ומחזיקים חזק']);const f=k==0?.25:Math.random()<.5?0:.5;let lost=0;s.c=s.c.map(x=>{const l=Math.floor(x*f);lost+=l;return x-l});ev=lost?'⛈️ איבדתם '+lost+' יחידות סחורה.':'🙏 התפילה נענתה, הים נרגע ושום דבר לא אבד!'}
+else if(r<.4){const g=50+Math.floor(Math.random()*70);s.gold+=g;ev='🎁 מצאתם תיבה צפה עם '+g+' מטבעות!'}
+s.day+=d;s.loc=to;rollP();busy=false;setSky();render();
+msg(ev+'<br>הגעתם אל '+PT[to][0]+'.'+(shab()?'<br>🕯️ היום שבת, נחים בנמל.':''))}
+function render(){setSky();const q=s.q,sb=shab();
+$('#hud').innerHTML='<span>💰 '+s.gold+'</span><span>📅 יום '+s.day+(sb?' 🕯️':'')+'</span><span>📦 '+load()+'/'+s.cap+'</span><span>🕋 '+s.alms+'</span><span>🪙 מעשר '+s.m+'</span><span>🏛️ '+s.fund+'/1000</span><span>📍 '+PT[s.loc][0]+'</span><a href="../" target="_blank" rel="noopener">🏠 דף הבית</a>';
+$('#qb').textContent='📜 הזמנה: '+q.n+' '+G[q.g][0]+' אל '+PT[q.p][0]+', פרס '+q.r+' מטבעות';
+bm.scale.y=.08+.92*Math.min(1,s.fund/1000);dome.visible=s.fund>=1000;
+document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab==open));
+const p=$('#panel');p.style.display=open?'block':'none';
+p.innerHTML=open=='mk'?G.map((g,i)=>{const r=pr[i]/g[2],col=r<.9?'#2e9e5b':r>1.1?'#c0392b':'#e0a020';return '<div class="row"><span>'+g[1]+' '+g[0]+'<br><small>'+pr[i]+' מטבעות '+(r<.9?'🟢 זול':r>1.1?'🔴 יקר':'')+' · אצלכם '+s.c[i]+'</small><div class="bar"><div style="height:100%;width:'+Math.min(100,r*55)+'%;background:'+col+'"></div></div></span><span><button data-b="'+i+'">קנה</button><button data-b5="'+i+'">קנה 5</button><button class="alt" data-s="'+i+'">מכור הכול</button></span></div>'}).join(''):
+open=='tr'?'<small>אפשר גם ללחוץ על אי בים.</small><br>'+PT.map((p,i)=>i==s.loc?'':'<button data-t="'+i+'">'+p[1]+' '+p[0]+' ('+dist(i)+' ימים)</button>').join(''):
+open=='ac'?(s.loc==0?'<button data-a="f">🏛️ תרומה לבית המדרש (100)</button>':'')+'<button class="alt" data-a="g">🕋 חלקו צדקה ממעשר ('+s.m+')</button><button data-a="q">📜 מסרו הזמנה</button><button class="alt" data-a="u">⚓ שדרגו ספינה ('+s.cap*10+')</button>'+(sb?'<button data-a="r">🌅 מוצאי שבת, ליום הבא</button>':''):''}
+document.body.onclick=e=>{const t=e.target.closest('button');if(!t||t.closest('#ov'))return;const d=t.dataset;
+if(d.tab){open=open==d.tab?null:d.tab;render()}
+else if(d.b!=null)buy(+d.b,1);else if(d.b5!=null)buy(+d.b5,5);else if(d.s!=null)sell(+d.s);else if(d.t!=null)sail(+d.t);
+else if(d.a=='f')fundIt();else if(d.a=='g')give();else if(d.a=='q')qDo();else if(d.a=='u')upg();else if(d.a=='r')rest()};
+render();msg('<b style="font-size:26px">⛵ סוחר הים</b><br>קונים בזול, מוכרים ביוקר, מפרישים מעשר, נותנים צדקה ובונים בית מדרש ביפו.<br><small>הלשוניות למטה נפתחות ונסגרות בלחיצה.</small>','יוצאים לדרך');
+</script>
+</body>
+</html>
